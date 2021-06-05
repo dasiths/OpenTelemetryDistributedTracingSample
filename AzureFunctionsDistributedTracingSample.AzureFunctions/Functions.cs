@@ -74,7 +74,7 @@ namespace AzureFunctionsDistributedTracingSample.AzureFunctions
             
             activity?.AddEvent(new ActivityEvent($"Setting up tasks to say hello to {input.InputObject}"));
 
-            AddActivityToHeader(activity, props);
+            //AddActivityToHeader(activity, props);
 
             using var childSpan = source.StartActivity("Wait for task completion");
             var outputs = new List<Task<string>>
@@ -105,19 +105,19 @@ namespace AzureFunctionsDistributedTracingSample.AzureFunctions
         //    return SayHelloImpl(input, log);
         //}
 
-        private static void AddActivityToHeader(Activity activity, IBasicProperties props)
-        {
-            Propagator.Inject(new PropagationContext(activity.Context, Baggage.Current), props, InjectContextIntoHeader);
-            activity?.SetTag("messaging.system", "rabbitmq");
-            activity?.SetTag("messaging.destination_kind", "queue");
-            activity?.SetTag("messaging.rabbitmq.queue", "sample");
-        }
+        //private static void AddActivityToHeader(Activity activity, IBasicProperties props)
+        //{
+        //    Propagator.Inject(new PropagationContext(activity.Context, Baggage.Current), props, InjectContextIntoHeader);
+        //    activity?.SetTag("messaging.system", "rabbitmq");
+        //    activity?.SetTag("messaging.destination_kind", "queue");
+        //    activity?.SetTag("messaging.rabbitmq.queue", "sample");
+        //}
 
-        private static void InjectContextIntoHeader(IBasicProperties props, string key, string value)
-        {
-                props.Headers ??= new Dictionary<string, object>();
-                props.Headers[key] = value;
-        }
+        //private static void InjectContextIntoHeader(IBasicProperties props, string key, string value)
+        //{
+        //        props.Headers ??= new Dictionary<string, object>();
+        //        props.Headers[key] = value;
+        //}
 
         private static string SayHelloImpl(MyFunctionInput<string> input, ILogger log)
         {
