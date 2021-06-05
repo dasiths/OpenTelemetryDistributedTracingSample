@@ -28,7 +28,6 @@ namespace AzureFunctionsDistributedTracingSample.AzureFunctions
             var zipkinUri = "http://localhost:9411/api/v2/spans";
 
             var openTelemetry = Sdk.CreateTracerProviderBuilder()
-                .AddHttpClientInstrumentation()
                 .AddSource(Functions.ActivitySourceName)
                 .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("zipkin-test"))
                 .AddZipkinExporter(o =>
