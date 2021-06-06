@@ -73,16 +73,13 @@ namespace AzureFunctionsDistributedTracingSample.AzureFunctions
 
             var outputs = new List<Task<string>>
             {
-                //context.CallActivityAsync<string>("HelloFunction_Hello",
-                //    new MyFunctionInput<string>(inputObject.Input + " Tokyo")),
-                //context.CallActivityAsync<string>("HelloFunction_Hello",
-                //    new MyFunctionInput<string>(inputObject.Input + " Seattle")),
-                //context.CallActivityAsync<string>("HelloFunction_Hello",
-                //    new MyFunctionInput<string>(inputObject.Input + " London")),
+                context.CallActivityAsync<string>("HelloFunction_Hello", inputModel1),
+                context.CallActivityAsync<string>("HelloFunction_Hello", inputModel2),
+                context.CallActivityAsync<string>("HelloFunction_Hello", inputModel3),
 
-                Task.Run(() => SayHelloImpl(inputModel1, log)),
-                Task.Run(() => SayHelloImpl(inputModel2 , log)),
-                Task.Run(() => SayHelloImpl(inputModel3, log))
+                //Task.Run(() => SayHelloImpl(inputModel1, log)),
+                //Task.Run(() => SayHelloImpl(inputModel2 , log)),
+                //Task.Run(() => SayHelloImpl(inputModel3, log))
             };
 
             await Task.WhenAll(outputs);
@@ -92,12 +89,12 @@ namespace AzureFunctionsDistributedTracingSample.AzureFunctions
             return outputs.Select(t => t.Result).ToList();
         }
 
-        //[FunctionName("HelloFunction_Hello")]
-        //public static string SayHello([ActivityTrigger] IDurableActivityContext context, ILogger log)
-        //{
-        //    var input = context.GetInput<MyFunctionInput<string>>();
-        //    return SayHelloImpl(input, log);
-        //}
+        [FunctionName("HelloFunction_Hello")]
+        public static string SayHello([ActivityTrigger] IDurableActivityContext context, ILogger log)
+        {
+            var input = context.GetInput<MyFunctionInput<string>>();
+            return SayHelloImpl(input, log);
+        }
 
         private static string SayHelloImpl(MyFunctionInput<string> inputObject, ILogger log)
         {
