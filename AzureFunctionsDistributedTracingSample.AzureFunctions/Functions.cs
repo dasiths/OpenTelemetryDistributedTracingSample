@@ -50,7 +50,7 @@ namespace AzureFunctionsDistributedTracingSample.AzureFunctions
             [OrchestrationTrigger] IDurableOrchestrationContext context, ILogger log)
         {
             var inputObject = context.GetInput<MyFunctionInput<string>>();
-            var parentContext = ExtractTraceContext(inputObject.TraceProperties);
+            var parentContext = ExtractPropagationContext(inputObject.TraceProperties);
 
             using var source = new ActivitySource(ActivitySourceName);
             using var activity = StartActivity(source, "DurableFunction-FanOut", ActivityKind.Producer, parentContext);
@@ -98,7 +98,7 @@ namespace AzureFunctionsDistributedTracingSample.AzureFunctions
 
         private static string SayHelloImpl(MyFunctionInput<string> inputObject, ILogger log)
         {
-            var parentContext = ExtractTraceContext(inputObject.TraceProperties);
+            var parentContext = ExtractPropagationContext(inputObject.TraceProperties);
             using var source = new ActivitySource(ActivitySourceName);
             using var activity = StartActivity(source, "Function-Consumer", ActivityKind.Consumer, parentContext);
 
@@ -111,29 +111,33 @@ namespace AzureFunctionsDistributedTracingSample.AzureFunctions
             return $"Hello {inputObject.Input}!";
         }
 
+        // Create propagation context from Activity and set baggage
         private static PropagationContext CreateNewPropagationContext(Activity activity)
         {
             var currentBaggage = new Baggage()
                 .SetBaggage(Baggage.Current.GetBaggage())
                 .SetBaggage(activity.Baggage);
 
-            return new PropagationContext(activity.Context, currentBaggage);
+            return new PropagationContext(activity.Context, currentBaggage); // create new propagation context with baggage
         }
 
+        // Create propagation context from parent context and set baggage
         private static PropagationContext CreateNewPropagationContext(PropagationContext parentContext)
         {
+            var currentBaggageItems = Baggage.Current.GetBaggage(); // We need to do this before creating a new baggage which affect current
             var currentBaggage = new Baggage()
-                    .SetBaggage(Baggage.Current.GetBaggage())
-                    .SetBaggage(parentContext.Baggage.GetBaggage());
+                    .SetBaggage(parentContext.Baggage.GetBaggage())
+                    .SetBaggage(currentBaggageItems);
 
             if (Activity.Current != null)
             {
                 currentBaggage = currentBaggage.SetBaggage(Activity.Current.Baggage);
             }
 
-            return new PropagationContext(parentContext.ActivityContext, currentBaggage);
+            return new PropagationContext(parentContext.ActivityContext, currentBaggage); // create new propagation context with baggage
         }
 
+        // Use to hydrate a dictionary with current propagation context
         private static void HydrateWithPropagationContext(PropagationContext context, Dictionary<string, string> traceProperties)
         {
             TextMapPropagator.Inject(context, traceProperties,
@@ -143,8 +147,8 @@ namespace AzureFunctionsDistributedTracingSample.AzureFunctions
                 });
         }
 
-        //Extract the Activity from the message header
-        private static PropagationContext ExtractTraceContext(Dictionary<string, string> properties)
+        // Extract the propagation context from the dictionary
+        private static PropagationContext ExtractPropagationContext(Dictionary<string, string> properties)
         {
             var propagationContext = TextMapPropagator.Extract(default, properties, (props, key) =>
             {
