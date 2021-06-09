@@ -3,71 +3,49 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OpenTelemetry;
-using OpenTelemetry.Context.Propagation;
-using JsonConverter = System.Text.Json.Serialization.JsonConverter;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace AzureFunctionsDistributedTracingSample.AzureFunctions
 {
-    public class MyFunctionInput<T>
-    {
-        public T Input { get; set; }
-        public Dictionary<string, string> TraceProperties { get; set; } = new Dictionary<string, string>();
-
-        public MyFunctionInput()
-        {
-        }
-
-        public MyFunctionInput(T input)
-        {
-            Input = input;
-        }
-    }
-
     public static class Functions
     {
-        // https://www.mytechramblings.com/posts/getting-started-with-opentelemetry-and-dotnet-core/
-
-        private static readonly TextMapPropagator TextMapPropagator = Propagators.DefaultTextMapPropagator;
-
         public const string ActivitySourceName = "AzureFunctionsDistributedTracingSample.AzureFunctions";
-        public const string TraceContextBaggageKeyName = "baggage";
 
         [FunctionName("HelloFunction")]
         public static async Task<List<string>> RunOrchestrator(
             [OrchestrationTrigger] IDurableOrchestrationContext context, ILogger log)
         {
-            var inputObject = context.GetInput<MyFunctionInput<string>>();
-            var parentContext = ExtractPropagationContext(inputObject.TraceProperties);
+            var inputObject = context.GetInput<FunctionInput<string>>();
+            var parentContext = inputObject.ExtractPropagationContext(m => m.TraceProperties);
+            var parentBaggage = JsonConvert.SerializeObject(parentContext.Baggage.GetBaggage());
 
-            using var source = new ActivitySource(ActivitySourceName);
-            using var activity = StartActivity(source, "DurableFunction-FanOut", ActivityKind.Producer, parentContext);
-
-            activity?.SetTag("ParentBaggage", JsonConvert.SerializeObject(parentContext.Baggage.GetBaggage()));
             Baggage.Current.SetBaggage("test3", "value");
+            
+            using var source = new ActivitySource(ActivitySourceName);
+            using var activity = source.StartActivity("DurableFunction-FanOut", ActivityKind.Producer, parentContext);
 
-            var propagationContext = CreateNewPropagationContext(parentContext);
+            activity?.SetTag("ParentBaggage", parentBaggage);
+            
+            var currentBaggage = JsonConvert.SerializeObject(Baggage.Current.GetBaggage());
+            activity?.SetTag("CurrentBaggage", currentBaggage);
 
-            var inputModel1 = new MyFunctionInput<string>(inputObject.Input + " from Tokyo");
-            HydrateWithPropagationContext(propagationContext, inputModel1.TraceProperties);
+            var childPropagationContext = parentContext.NewChildPropagationContext();
 
-            var inputModel2 = new MyFunctionInput<string>(inputObject.Input + " from Seattle");
-            HydrateWithPropagationContext(propagationContext, inputModel2.TraceProperties);
+            var inputModel1 = new FunctionInput<string>(inputObject.Input + " from Tokyo");
+            inputModel1.HydrateWithPropagationContext(m => m.TraceProperties, childPropagationContext);
 
-            var inputModel3 = new MyFunctionInput<string>(inputObject.Input + " from London");
-            HydrateWithPropagationContext(propagationContext, inputModel3.TraceProperties);
+            var inputModel2 = new FunctionInput<string>(inputObject.Input + " from Seattle");
+            inputModel2.HydrateWithPropagationContext(m => m.TraceProperties, childPropagationContext);
+
+            var inputModel3 = new FunctionInput<string>(inputObject.Input + " from London");
+            inputModel3.HydrateWithPropagationContext(m => m.TraceProperties, childPropagationContext);
 
             activity?.AddEvent(new ActivityEvent($"Setting up tasks to say hello to {inputObject.Input}"));
 
@@ -92,92 +70,24 @@ namespace AzureFunctionsDistributedTracingSample.AzureFunctions
         [FunctionName("HelloFunction_Hello")]
         public static string SayHello([ActivityTrigger] IDurableActivityContext context, ILogger log)
         {
-            var input = context.GetInput<MyFunctionInput<string>>();
+            var input = context.GetInput<FunctionInput<string>>();
             return SayHelloImpl(input, log);
         }
 
-        private static string SayHelloImpl(MyFunctionInput<string> inputObject, ILogger log)
+        private static string SayHelloImpl(FunctionInput<string> inputObject, ILogger log)
         {
-            var parentContext = ExtractPropagationContext(inputObject.TraceProperties);
+            var parentContext = inputObject.ExtractPropagationContext(m => m.TraceProperties);
             using var source = new ActivitySource(ActivitySourceName);
-            using var activity = StartActivity(source, "Function-Consumer", ActivityKind.Consumer, parentContext);
+            using var activity = source.StartActivity("Function-Consumer", ActivityKind.Consumer, parentContext);
 
-            activity?.SetTag("CurrentBaggage", JsonConvert.SerializeObject(parentContext.Baggage.GetBaggage()));
+            var currentBaggage = JsonConvert.SerializeObject(Baggage.Current.GetBaggage());
+            activity?.SetTag("CurrentBaggage", currentBaggage);
 
             Thread.Sleep(1000);
 
             log.LogInformation($"Saying hello to {inputObject.Input}.");
             activity?.AddEvent(new ActivityEvent($"Completed saying hello to {inputObject.Input}"));
             return $"Hello {inputObject.Input}!";
-        }
-
-        // Create propagation context from Activity and set baggage
-        private static PropagationContext CreateNewPropagationContext(Activity activity)
-        {
-            var currentBaggage = new Baggage()
-                .SetBaggage(Baggage.Current.GetBaggage())
-                .SetBaggage(activity.Baggage);
-
-            return new PropagationContext(activity.Context, currentBaggage); // create new propagation context with baggage
-        }
-
-        // Create propagation context from parent context and set baggage
-        private static PropagationContext CreateNewPropagationContext(PropagationContext parentContext)
-        {
-            var currentBaggageItems = Baggage.Current.GetBaggage(); // We need to do this before creating a new baggage which affect current
-            var currentBaggage = new Baggage()
-                    .SetBaggage(parentContext.Baggage.GetBaggage())
-                    .SetBaggage(currentBaggageItems);
-
-            if (Activity.Current != null)
-            {
-                currentBaggage = currentBaggage.SetBaggage(Activity.Current.Baggage);
-            }
-
-            return new PropagationContext(parentContext.ActivityContext, currentBaggage); // create new propagation context with baggage
-        }
-
-        // Use to hydrate a dictionary with current propagation context
-        private static void HydrateWithPropagationContext(PropagationContext context, Dictionary<string, string> traceProperties)
-        {
-            TextMapPropagator.Inject(context, traceProperties,
-                (properties, key, value) =>
-                {
-                    properties[key] = value;
-                });
-        }
-
-        // Extract the propagation context from the dictionary
-        private static PropagationContext ExtractPropagationContext(Dictionary<string, string> properties)
-        {
-            var propagationContext = TextMapPropagator.Extract(default, properties, (props, key) =>
-            {
-                if (props.TryGetValue(key, out var value))
-                {
-                    return new[] { value };
-                }
-
-                return Enumerable.Empty<string>();
-            });
-
-            return propagationContext;
-        }
-
-        private static Activity StartActivity(ActivitySource source, string activityName, ActivityKind kind)
-        {
-            return source.StartActivity(activityName, kind);
-        }
-
-        private static Activity StartActivity(ActivitySource source, string activityName, ActivityKind kind, PropagationContext propagationContext)
-        {
-           var activity = source.StartActivity(activityName, kind, propagationContext.ActivityContext);
-           
-           foreach (var (key, value) in propagationContext.Baggage)
-           {
-               activity?.AddBaggage(key, value);
-           }
-
-           return activity;
         }
 
         [FunctionName("HelloFunction_HttpStart")]
@@ -188,7 +98,7 @@ namespace AzureFunctionsDistributedTracingSample.AzureFunctions
             ILogger log)
         {
             using var source = new ActivitySource(ActivitySourceName);
-            using var activity = StartActivity(source, "HttpTrigger-Initiate", ActivityKind.Server);
+            using var activity = source.StartActivity("HttpTrigger-Initiate", ActivityKind.Server);
 
             Baggage.Current.SetBaggage("test1", "value");
             Baggage.Current.SetBaggage("test2", "value");
@@ -196,9 +106,9 @@ namespace AzureFunctionsDistributedTracingSample.AzureFunctions
             activity?.SetTag("environment.machineName", Environment.MachineName);
             activity?.SetTag("environment.osVersion", Environment.OSVersion);
 
-            var input = new MyFunctionInput<string>(username);
-            var propagationContext = CreateNewPropagationContext(activity);
-            HydrateWithPropagationContext(propagationContext, input.TraceProperties);
+            var input = new FunctionInput<string>(username);
+            var propagationContext = activity.NewPropagationContext();
+            input.HydrateWithPropagationContext(m => m.TraceProperties, propagationContext);
 
             // Function inputObject comes from the request content.
             string instanceId = await starter.StartNewAsync("HelloFunction", null, input);
