@@ -17,6 +17,9 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="4.0.0-dev-00839" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\AzureFunctionsDistributedTracingSample.Shared\AzureFunctionsDistributedTracingSample.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <None Update="host.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
