@@ -5,7 +5,7 @@ using System.Linq;
 using OpenTelemetry;
 using OpenTelemetry.Context.Propagation;
 
-namespace AzureFunctionsDistributedTracingSample.Shared
+namespace DistributedTracingSample.Shared
 {
     public static class InstrumentationHelper
     {

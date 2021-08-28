@@ -6,7 +6,7 @@ using OpenTelemetry;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
-namespace AzureFunctionsDistributedTracingSample.HttpClient
+namespace DistributedTracingSample.HttpClient
 {
     class Program
     {

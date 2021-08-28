@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AzureFunctionsDistributedTracingSample.AzureFunctions
+namespace DistributedTracingSample.AzureFunctions
 {
     public class FunctionInput<T>
     {

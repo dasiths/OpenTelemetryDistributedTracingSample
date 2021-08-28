@@ -1,14 +1,14 @@
 ﻿using System;
+using DistributedTracingSample.AzureFunctions;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry;
-using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 
-[assembly: FunctionsStartup(typeof(AzureFunctionsDistributedTracingSample.AzureFunctions.Startup))]
-namespace AzureFunctionsDistributedTracingSample.AzureFunctions
+[assembly: FunctionsStartup(typeof(Startup))]
+namespace DistributedTracingSample.AzureFunctions
 {
 
     public class Startup : FunctionsStartup

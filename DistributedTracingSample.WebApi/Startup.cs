@@ -1,18 +1,14 @@
+using System;
+using System.Diagnostics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
-namespace AzureFunctionsDistributedTracingSample.WebApi
+namespace DistributedTracingSample.WebApi
 {
     public class Startup
     {

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 
-namespace AzureFunctionsDistributedTracingSample.WebApi.Controllers
+namespace DistributedTracingSample.WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

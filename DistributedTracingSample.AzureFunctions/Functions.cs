@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using AzureFunctionsDistributedTracingSample.Shared;
+using DistributedTracingSample.Shared;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -13,11 +13,11 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OpenTelemetry;
 
-namespace AzureFunctionsDistributedTracingSample.AzureFunctions
+namespace DistributedTracingSample.AzureFunctions
 {
     public static class Functions
     {
-        public const string ActivitySourceName = "AzureFunctionsDistributedTracingSample.AzureFunctions";
+        public const string ActivitySourceName = "DistributedTracingSample.AzureFunctions";
 
         [FunctionName("HelloFunction")]
         public static async Task<List<string>> RunOrchestrator(
