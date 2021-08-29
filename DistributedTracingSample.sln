@@ -11,6 +11,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedTracingSample.We
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedTracingSample.HttpClient", "DistributedTracingSample.HttpClient\DistributedTracingSample.HttpClient.csproj", "{3D0BE4D6-12EA-4BDE-8834-E10FB9BA1535}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedTracingSample.Messaging.Publisher", "DistributedTracingSample.Messaging.Publisher\DistributedTracingSample.Messaging.Publisher.csproj", "{E45EAE56-FD3A-4534-85D3-278403D50F86}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedTracingSample.Messaging.Consumer", "DistributedTracingSample.Messaging.Consumer\DistributedTracingSample.Messaging.Consumer.csproj", "{6CD825BB-2343-4C84-AE3A-1870D7814CE1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +37,14 @@ Global
 		{3D0BE4D6-12EA-4BDE-8834-E10FB9BA1535}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D0BE4D6-12EA-4BDE-8834-E10FB9BA1535}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3D0BE4D6-12EA-4BDE-8834-E10FB9BA1535}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E45EAE56-FD3A-4534-85D3-278403D50F86}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E45EAE56-FD3A-4534-85D3-278403D50F86}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E45EAE56-FD3A-4534-85D3-278403D50F86}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E45EAE56-FD3A-4534-85D3-278403D50F86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CD825BB-2343-4C84-AE3A-1870D7814CE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CD825BB-2343-4C84-AE3A-1870D7814CE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CD825BB-2343-4C84-AE3A-1870D7814CE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CD825BB-2343-4C84-AE3A-1870D7814CE1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

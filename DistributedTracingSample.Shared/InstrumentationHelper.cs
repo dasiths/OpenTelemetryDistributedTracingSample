@@ -24,7 +24,7 @@ namespace DistributedTracingSample.Shared
         private static readonly TextMapPropagator TextMapPropagator = Propagators.DefaultTextMapPropagator;
 
         // Create propagation context from Activity and set baggage
-        public static PropagationContext NewPropagationContext(this Activity activity, bool includeCurrentOpenTelemetryBaggage = true, bool includeCurrentActivityBaggage = false)
+        public static PropagationContext CreatePropagationContext(this Activity activity, bool includeCurrentOpenTelemetryBaggage = true, bool includeCurrentActivityBaggage = false)
         {
             var currentBaggage = new Baggage()
                 .SetBaggage(includeCurrentOpenTelemetryBaggage ? Baggage.Current.GetBaggage() : new Dictionary<string, string>())
@@ -34,7 +34,7 @@ namespace DistributedTracingSample.Shared
         }
 
         // Create propagation context from parent context and set baggage
-        public static PropagationContext NewChildPropagationContext(this PropagationContext parentContext, bool includeParentBaggage = true, bool includeCurrentOpenTelemetryBaggage = true, bool includeCurrentActivityBaggage = false)
+        public static PropagationContext CreateChildPropagationContext(this PropagationContext parentContext, bool includeParentBaggage = true, bool includeCurrentOpenTelemetryBaggage = true, bool includeCurrentActivityBaggage = false)
         {
             var currentBaggageItems = Baggage.Current.GetBaggage(); // We need to do this before creating a new baggage which affect current
             var currentBaggage = new Baggage()

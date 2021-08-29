@@ -1,17 +1,17 @@
 using System.Collections.Generic;
 
-namespace DistributedTracingSample.AzureFunctions
+namespace DistributedTracingSample.Shared
 {
-    public class FunctionInput<T>
+    public class MessageWrapper<T>
     {
         public T Input { get; set; }
         public Dictionary<string, string> TraceProperties { get; set; } = new Dictionary<string, string>();
 
-        public FunctionInput()
+        public MessageWrapper()
         {
         }
 
-        public FunctionInput(T input)
+        public MessageWrapper(T input)
         {
             Input = input;
         }
