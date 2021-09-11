@@ -13,9 +13,9 @@ namespace DistributedTracingSample.Messaging.Publisher
 {
     class Program
     {
-        const string ZipkinUri = "http://localhost:9411/api/v2/spans";
-        const string ActivitySourceName = "message-publisher-test-source";
-        const string QueueName = "distributed-tracing-sample-queue";
+        private const string ZipkinUri = "http://localhost:9411/api/v2/spans";
+        private const string ActivitySourceName = "message-publisher-test-source";
+        private const string QueueName = "distributed-tracing-sample-queue";
         private const string ServiceName = "message-publisher";
 
         static void Main(string[] args)

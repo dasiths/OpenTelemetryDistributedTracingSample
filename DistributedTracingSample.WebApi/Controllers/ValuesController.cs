@@ -27,8 +27,18 @@ namespace DistributedTracingSample.WebApi.Controllers
                 logger.LogInformation($"TraceId: {activity.Context.TraceId} \n" +
                                       $"Baggage: {JsonSerializer.Serialize(baggage.GetBaggage(), serializerSettings)}");
             }
-            
+
+            await SaveToDatabase();
             return $"Hello {name}";
+        }
+
+        private async Task SaveToDatabase()
+        {
+            using var source = new ActivitySource(Startup.ActivitySourceName);
+            using var activity = source.StartActivity("save to the database", ActivityKind.Internal);
+
+            activity?.AddEvent(new ActivityEvent("About to start writing to the database"));
+            await Task.Delay(200);
         }
     }
 }

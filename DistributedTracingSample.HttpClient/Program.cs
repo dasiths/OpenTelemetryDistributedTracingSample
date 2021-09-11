@@ -10,9 +10,9 @@ namespace DistributedTracingSample.HttpClient
 {
     class Program
     {
-        const string ZipkinUri = "http://localhost:9411/api/v2/spans";
-        const string ActivitySourceName = "http-client-test-source";
-        const string ServiceName = "http-client";
+        private const string ZipkinUri = "http://localhost:9411/api/v2/spans";
+        private const string ActivitySourceName = "http-client-test-source";
+        private const string ServiceName = "http-client";
         
         static void Main(string[] args)
         {

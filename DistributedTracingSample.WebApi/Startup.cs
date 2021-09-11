@@ -12,9 +12,10 @@ namespace DistributedTracingSample.WebApi
 {
     public class Startup
     {
-        const string ZipkinUri = "http://localhost:9411/api/v2/spans";
-        const string ServiceName = "http-server";
-        
+        private const string ZipkinUri = "http://localhost:9411/api/v2/spans";
+        private const string ServiceName = "http-server";
+        public const string ActivitySourceName = "sample-source";
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -33,6 +34,7 @@ namespace DistributedTracingSample.WebApi
             services.AddOpenTelemetryTracing(
                 (builder) => builder
                     .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(ServiceName))
+                    .AddSource(ActivitySourceName)
                     .AddAspNetCoreInstrumentation()
                     .AddZipkinExporter(o =>
                     {

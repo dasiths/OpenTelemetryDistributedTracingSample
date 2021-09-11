@@ -10,9 +10,10 @@ using Serilog;
 [assembly: FunctionsStartup(typeof(Startup))]
 namespace DistributedTracingSample.AzureFunctions
 {
-
     public class Startup : FunctionsStartup
     {
+        private const string ServiceName = "zipkin-test";
+        
         public override void Configure(IFunctionsHostBuilder builder)
         {
             builder.Services.AddHttpClient();
@@ -29,7 +30,7 @@ namespace DistributedTracingSample.AzureFunctions
 
             var openTelemetry = Sdk.CreateTracerProviderBuilder()
                 .AddSource(Functions.ActivitySourceName)
-                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("zipkin-test"))
+                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(ServiceName))
                 .AddZipkinExporter(o =>
                 {
                     o.Endpoint = new Uri(zipkinUri);

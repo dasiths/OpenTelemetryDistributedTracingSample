@@ -14,10 +14,10 @@ namespace DistributedTracingSample.Messaging.Consumer
 {
     class Program
     {
-        const string ZipkinUri = "http://localhost:9411/api/v2/spans";
-        const string ActivitySourceName = "message-consumer-test-source";
-        const string QueueName = "distributed-tracing-sample-queue";
-        const string ServiceName = "message-consumer";
+        private const string ZipkinUri = "http://localhost:9411/api/v2/spans";
+        private const string ActivitySourceName = "message-consumer-test-source";
+        private const string QueueName = "distributed-tracing-sample-queue";
+        private const string ServiceName = "message-consumer";
 
         static void Main(string[] args)
         {
