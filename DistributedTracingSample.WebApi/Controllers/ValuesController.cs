@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,7 @@ namespace DistributedTracingSample.WebApi.Controllers
     public class ValuesController : ControllerBase
     {
         [HttpGet("SayHello")]
-        public async Task<ActionResult<string>> SayHello(string name, [FromServices]ILogger<ValuesController> logger)
+        public async Task<ActionResult<string>> SayHello(string name, [FromServices] ILogger<ValuesController> logger)
         {
             var activity = Activity.Current;
             var baggage = Baggage.Current;
@@ -21,12 +22,18 @@ namespace DistributedTracingSample.WebApi.Controllers
             {
                 WriteIndented = true
             };
-            
+
             if (activity != null)
             {
                 logger.LogInformation($"TraceId: {activity.Context.TraceId} \n" +
                                       $"Baggage: {JsonSerializer.Serialize(baggage.GetBaggage(), serializerSettings)}");
             }
+
+            var requestHeaders = this.Request.Headers;
+            logger.LogInformation($"\n-----------\n" +
+                                  $"Headers are:\n" +
+                                  $"{string.Join("\n", requestHeaders.Select(kvp => $"Key: {kvp.Key}, Value: {kvp.Value}"))}\n" +
+                                  $"-----------\n");
 
             await SaveToDatabase();
             return $"Hello {name}";
