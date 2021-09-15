@@ -25,35 +25,36 @@ namespace DistributedTracingSample.Messaging.Publisher
             // setup the trace provider
             using var openTelemetry = Sdk.CreateTracerProviderBuilder()
                 .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(ServiceName))
-                .AddSource(ActivitySourceName)
+                .AddSource(ActivitySourceName) // Opting in to any spans coming from this source
                 .AddZipkinExporter(o =>
                 {
-                    o.Endpoint = new Uri(ZipkinUri);
+                    o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin
                 })
-                .AddConsoleExporter()
+                .AddConsoleExporter() // also export to console
                 .Build();
 
             // create RabbitMQ connection
             var factory = new ConnectionFactory() { HostName = "localhost" };
-            using (var connection = factory.CreateConnection())
+            using var connection = factory.CreateConnection();
+            using var channel = connection.CreateModel();
+            
+            channel.QueueDeclare(queue: QueueName,
+                durable: false,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
+
+            Console.WriteLine("Press return to send the message...");
+            Console.ReadLine();
+
+            do
             {
-                using (var channel = connection.CreateModel())
-                {
-                    channel.QueueDeclare(queue: QueueName,
-                        durable: false,
-                        exclusive: false,
-                        autoDelete: false,
-                        arguments: null);
-                    
-                    Console.WriteLine("Press return to send the message...");
-                    Console.ReadLine();
+                SendMessage(channel);
+                Console.WriteLine("Do you want to trigger the api again (Y/N)? ");
+                
+            } while (Console.ReadKey().KeyChar.ToString().ToLower() == "y");
 
-                    // send the message
-                    SendMessage(channel);
-                }
-            }
-
-            Console.WriteLine("Press return to exit...");
+            Console.WriteLine("\nPress return to exit...");
             Console.ReadLine();
         }
 
@@ -64,11 +65,11 @@ namespace DistributedTracingSample.Messaging.Publisher
                 WriteIndented = true
             };
 
-            // create the activity source and activity
+            // create new span via .NET Activity API.
             using var source = new ActivitySource(ActivitySourceName);
             using var activity = source.StartActivity("outgoing message", ActivityKind.Producer);
 
-            // some sample baggage
+            // use baggage to send additional data with the propagation context
             Baggage.Current = Baggage.SetBaggage(new KeyValuePair<string, string>[]
             {
                 new("key1", "value1"),
@@ -79,17 +80,18 @@ namespace DistributedTracingSample.Messaging.Publisher
             Console.WriteLine($"TraceId: {activity?.Context.TraceId}");
             Console.WriteLine($"Baggage: {JsonSerializer.Serialize(Baggage.Current.GetBaggage(), serializerSettings)}");
 
-            // some sample tags
+            // use tags to trace additional data about the span
             activity?.SetTag("environment.machineName", Environment.MachineName);
             activity?.SetTag("environment.osVersion", Environment.OSVersion);
 
-            // create the model
+            // prepare model by wrapping your message in our custom message envelope
             var message = "Hello World!";
-            var model = new MessageWrapper<string>(message);
+            var model = new MyMessageEnvelope<string>(message);
 
-            // create the propagation context and hydrate the model with it
+            // create the OpenTelemetry propagation context and hydrate the model with it
+            // we are using the helper class for CreatePropagationContext() and HydrateWithPropagationContext() methods
             var propagationContext = activity.CreatePropagationContext();
-            model.HydrateWithPropagationContext(m => m.TraceProperties, propagationContext);
+            model.HydrateWithPropagationContext(m => m.TraceContext, propagationContext);
 
             // prepare the payload
             var payload = JsonSerializer.Serialize(model);

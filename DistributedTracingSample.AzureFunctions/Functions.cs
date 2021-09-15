@@ -23,8 +23,8 @@ namespace DistributedTracingSample.AzureFunctions
         public static async Task<List<string>> RunOrchestrator(
             [OrchestrationTrigger] IDurableOrchestrationContext context, ILogger log)
         {
-            var inputObject = context.GetInput<MessageWrapper<string>>();
-            var parentContext = inputObject.ExtractPropagationContext(m => m.TraceProperties);
+            var inputObject = context.GetInput<MyMessageEnvelope<string>>();
+            var parentContext = inputObject.ExtractPropagationContext(m => m.TraceContext);
             var parentBaggage = JsonConvert.SerializeObject(parentContext.Baggage.GetBaggage());
 
             Baggage.Current.SetBaggage("test3", "value");
@@ -39,14 +39,14 @@ namespace DistributedTracingSample.AzureFunctions
 
             var childPropagationContext = parentContext.CreateChildPropagationContext();
 
-            var inputModel1 = new MessageWrapper<string>(inputObject.Input + " from Tokyo");
-            inputModel1.HydrateWithPropagationContext(m => m.TraceProperties, childPropagationContext);
+            var inputModel1 = new MyMessageEnvelope<string>(inputObject.Input + " from Tokyo");
+            inputModel1.HydrateWithPropagationContext(m => m.TraceContext, childPropagationContext);
 
-            var inputModel2 = new MessageWrapper<string>(inputObject.Input + " from Seattle");
-            inputModel2.HydrateWithPropagationContext(m => m.TraceProperties, childPropagationContext);
+            var inputModel2 = new MyMessageEnvelope<string>(inputObject.Input + " from Seattle");
+            inputModel2.HydrateWithPropagationContext(m => m.TraceContext, childPropagationContext);
 
-            var inputModel3 = new MessageWrapper<string>(inputObject.Input + " from London");
-            inputModel3.HydrateWithPropagationContext(m => m.TraceProperties, childPropagationContext);
+            var inputModel3 = new MyMessageEnvelope<string>(inputObject.Input + " from London");
+            inputModel3.HydrateWithPropagationContext(m => m.TraceContext, childPropagationContext);
 
             activity?.AddEvent(new ActivityEvent($"Setting up tasks to say hello to {inputObject.Input}"));
 
@@ -71,13 +71,13 @@ namespace DistributedTracingSample.AzureFunctions
         [FunctionName("HelloFunction_Hello")]
         public static string SayHello([ActivityTrigger] IDurableActivityContext context, ILogger log)
         {
-            var input = context.GetInput<MessageWrapper<string>>();
+            var input = context.GetInput<MyMessageEnvelope<string>>();
             return SayHelloImpl(input, log);
         }
 
-        private static string SayHelloImpl(MessageWrapper<string> inputObject, ILogger log)
+        private static string SayHelloImpl(MyMessageEnvelope<string> inputObject, ILogger log)
         {
-            var parentContext = inputObject.ExtractPropagationContext(m => m.TraceProperties);
+            var parentContext = inputObject.ExtractPropagationContext(m => m.TraceContext);
             using var source = new ActivitySource(ActivitySourceName);
             using var activity = source.StartActivity("Function-Consumer", ActivityKind.Consumer, parentContext);
 
@@ -107,9 +107,9 @@ namespace DistributedTracingSample.AzureFunctions
             activity?.SetTag("environment.machineName", Environment.MachineName);
             activity?.SetTag("environment.osVersion", Environment.OSVersion);
 
-            var input = new MessageWrapper<string>(username);
+            var input = new MyMessageEnvelope<string>(username);
             var propagationContext = activity.CreatePropagationContext();
-            input.HydrateWithPropagationContext(m => m.TraceProperties, propagationContext);
+            input.HydrateWithPropagationContext(m => m.TraceContext, propagationContext);
 
             // Function inputObject comes from the request content.
             string instanceId = await starter.StartNewAsync("HelloFunction", null, input);

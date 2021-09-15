@@ -34,12 +34,12 @@ namespace DistributedTracingSample.WebApi
             services.AddOpenTelemetryTracing(
                 (builder) => builder
                     .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(ServiceName))
-                    .AddSource(ActivitySourceName)
-                    .AddAspNetCoreInstrumentation()
+                    .AddSource(ActivitySourceName) // Opting in to any spans coming from this source
+                    .AddAspNetCoreInstrumentation() // Opting in for aspnet core instrumentation
                     .AddZipkinExporter(o =>
                     {
-                        o.Endpoint = new Uri(ZipkinUri);
-                    }).AddConsoleExporter()
+                        o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin
+                    }).AddConsoleExporter() // Also export to console
                 );
         }
 

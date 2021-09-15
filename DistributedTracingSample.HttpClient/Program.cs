@@ -20,22 +20,27 @@ namespace DistributedTracingSample.HttpClient
             
             // setup the trace provider
             using var openTelemetry = Sdk.CreateTracerProviderBuilder()
-                .AddHttpClientInstrumentation()
                 .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(ServiceName))
-                .AddSource(ActivitySourceName)
+                .AddSource(ActivitySourceName) // Opting in to any spans coming from this source
+                .AddHttpClientInstrumentation() // Opting in for http client instrumentation
                 .AddZipkinExporter(o =>
                 {
-                    o.Endpoint = new Uri(ZipkinUri);
+                    o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin
                 })
-                .AddConsoleExporter()
+                .AddConsoleExporter() // Also export to console
                 .Build();
 
             Console.WriteLine("Press return to trigger the webapi...");
             Console.ReadLine();
 
-            CallWebApi();
+            do
+            {
+                CallWebApi();
+                Console.WriteLine("Do you want to trigger the api again (Y/N)? ");
+                
+            } while (Console.ReadKey().KeyChar.ToString().ToLower() == "y");
 
-            Console.WriteLine("Press return to exit...");
+            Console.WriteLine("\nPress return to exit...");
             Console.ReadLine();
         }
 
@@ -45,12 +50,12 @@ namespace DistributedTracingSample.HttpClient
             {
                 WriteIndented = true
             };
-            
-            // create the activity source and activity
+
+            // create new span via .NET Activity API.
             using var source = new ActivitySource(ActivitySourceName);
             using var activity = source.StartActivity("outgoing request", ActivityKind.Client);
 
-            // some sample baggage
+            // use baggage to send additional data with the propagation context
             Baggage.Current = Baggage.SetBaggage(new KeyValuePair<string, string>[]
             {
                 new("key1", "value1"),
@@ -58,12 +63,15 @@ namespace DistributedTracingSample.HttpClient
                 new("key3", "value3"),
             });
 
-            // some sample tags
+            // use tags to add additional data about the span to this trace
             activity?.SetTag("environment.machineName", Environment.MachineName);
             activity?.SetTag("environment.osVersion", Environment.OSVersion);
 
             Console.WriteLine($"TraceId: {activity?.Context.TraceId}");
             Console.WriteLine($"Baggage: {JsonSerializer.Serialize(Baggage.Current.GetBaggage(), serializerSettings)}");
+
+            // use events to log things
+            activity?.AddEvent(new ActivityEvent("This is something I'm logging"));
 
             // make the http call
             var client = new System.Net.Http.HttpClient();
