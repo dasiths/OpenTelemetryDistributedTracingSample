@@ -36,6 +36,7 @@ namespace DistributedTracingSample.WebApi
                     .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(ServiceName))
                     .AddSource(ActivitySourceName) // Opting in to any spans coming from this source
                     .AddAspNetCoreInstrumentation() // Opting in for aspnet core instrumentation
+                    .AddSqlClientInstrumentation() // Opting in for sql client instrumentation
                     .AddZipkinExporter(o =>
                     {
                         o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin

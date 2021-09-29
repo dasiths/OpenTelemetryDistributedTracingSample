@@ -91,7 +91,9 @@ namespace DistributedTracingSample.Messaging.Publisher
             // create the OpenTelemetry propagation context and hydrate the model with it
             // we are using the helper class for CreatePropagationContext() and HydrateWithPropagationContext() methods
             var propagationContext = activity.CreatePropagationContext();
-            model.HydrateWithPropagationContext(m => m.TraceContext, propagationContext);
+            model.HydrateWithPropagationContext(m => m.TraceContext, propagationContext); 
+            
+            // Bonus points: There is currently discussion going on about a MQTT W3C Trace Context spec https://w3c.github.io/trace-context-mqtt/
 
             // prepare the payload
             var payload = JsonSerializer.Serialize(model);
