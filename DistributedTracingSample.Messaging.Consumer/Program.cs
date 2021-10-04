@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -22,17 +23,20 @@ namespace DistributedTracingSample.Messaging.Consumer
 
         static void Main(string[] args)
         {
+            // Use the W3C trace context https://www.w3.org/TR/trace-context/
             Activity.DefaultIdFormat = ActivityIdFormat.W3C;
 
             // setup the trace provider
             using var openTelemetry = Sdk.CreateTracerProviderBuilder()
                 .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(ServiceName))
                 .AddSource(ActivitySourceName) // Opting in to any spans coming from this source
+                .AddHttpClientInstrumentation() // Opting in for http client instrumentation from OpenTelemetry.Instrumentation.SqlClient nuget library
+                .AddSqlClientInstrumentation() // Opting in for sql client instrumentation from OpenTelemetry.Instrumentation.Http nuget library
                 .AddZipkinExporter(o =>
                 {
-                    o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin
+                    o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin via OpenTelemetry.Exporter.Zipkin nuget library
                 })
-                .AddConsoleExporter() // also export to console
+                .AddConsoleExporter() // Also export to console via OpenTelemetry.Exporter.Console nuget library
                 .Build();
 
             // create RabbitMQ connection
@@ -89,25 +93,36 @@ namespace DistributedTracingSample.Messaging.Consumer
             Console.WriteLine($"TraceId: {activity?.Context.TraceId}");
             Console.WriteLine($"Baggage: {JsonSerializer.Serialize(Baggage.Current.GetBaggage(), serializerSettings)}");
 
-            // call sub activity
-            SaveToDatabase();
+            // call sub activities
+            CallExternalService().ConfigureAwait(false).GetAwaiter().GetResult();
+            SaveToDatabase().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-        private static void SaveToDatabase()
+        private static async Task SaveToDatabase()
         {
-            // create new span via .NET Activity API.
-            // We don't have to specify the context as this method was called from another method in the same process.
-            // It will automatically be linked to existing span as a parent because .NET implicitly passes the context information.
-            using var source = new ActivitySource(ActivitySourceName);
-            using var activity = source.StartActivity("save to the database", ActivityKind.Internal);
+            // We create a SQL Client here and do a sample call to the database to show the instrumented library capabilities
+            // SqlClient is instrumented via OpenTelemetry.Instrumentation.SqlClient library
 
-            // using events to log information to the trace
-            activity?.AddEvent(new ActivityEvent("About to start writing to the database"));
+            const string sqlConnectionString = @"Data Source=localhost;Initial Catalog=master;Integrated Security=True;"; // todo: Update this to point to your local sql instance
+            const string queryString = @"SELECT CAST( GETDATE() AS Date ) ;";
+
+            await using SqlConnection connection = new SqlConnection(sqlConnectionString);
+            var command = new SqlCommand(queryString, connection);
+            connection.Open();
+            await command.ExecuteReaderAsync();
+        }
+
+        private static async Task CallExternalService()
+        {
+            // make the http calls to external services.
+            // HttpClient is instrumented via OpenTelemetry.Instrumentation.Http library
             
-            // using tags to enrich the span information
-            activity?.AddTag("some header", "some value");
-            
-            Task.Delay(200).ConfigureAwait(false).GetAwaiter().GetResult();
+            var client = new System.Net.Http.HttpClient();
+            var result = await client.GetAsync(new Uri(@"https://www.google.com/search?q=open+telemetry+.net"));
+            Console.WriteLine($"External service status code = {result.StatusCode}");
+
+            result = await client.GetAsync(new Uri(@"https://www.bing.com/search?q=open+telemetry+.net"));
+            Console.WriteLine($"External service status code = {result.StatusCode}");
         }
     }
 }

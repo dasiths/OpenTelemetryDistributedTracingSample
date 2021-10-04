@@ -20,6 +20,7 @@ namespace DistributedTracingSample.Messaging.Publisher
 
         static void Main(string[] args)
         {
+            // Use the W3C trace context https://www.w3.org/TR/trace-context/
             Activity.DefaultIdFormat = ActivityIdFormat.W3C;
 
             // setup the trace provider
@@ -28,9 +29,9 @@ namespace DistributedTracingSample.Messaging.Publisher
                 .AddSource(ActivitySourceName) // Opting in to any spans coming from this source
                 .AddZipkinExporter(o =>
                 {
-                    o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin
+                    o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin via OpenTelemetry.Exporter.Zipkin nuget library
                 })
-                .AddConsoleExporter() // also export to console
+                .AddConsoleExporter() // Also export to console via OpenTelemetry.Exporter.Console nuget library
                 .Build();
 
             // create RabbitMQ connection

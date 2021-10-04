@@ -26,6 +26,7 @@ namespace DistributedTracingSample.WebApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // Use the W3C trace context https://www.w3.org/TR/trace-context/
             Activity.DefaultIdFormat = ActivityIdFormat.W3C;
 
             services.AddControllers();
@@ -35,12 +36,12 @@ namespace DistributedTracingSample.WebApi
                 (builder) => builder
                     .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(ServiceName))
                     .AddSource(ActivitySourceName) // Opting in to any spans coming from this source
-                    .AddAspNetCoreInstrumentation() // Opting in for aspnet core instrumentation
-                    .AddSqlClientInstrumentation() // Opting in for sql client instrumentation
+                    .AddAspNetCoreInstrumentation() // Opting in for aspnet core instrumentation from OpenTelemetry.Instrumentation.AspNetCore nuget library
+                    .AddSqlClientInstrumentation() // Opting in for http client instrumentation from OpenTelemetry.Instrumentation.SqlClient nuget library
                     .AddZipkinExporter(o =>
                     {
-                        o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin
-                    }).AddConsoleExporter() // Also export to console
+                        o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin via OpenTelemetry.Exporter.Zipkin nuget library
+                    }).AddConsoleExporter() // Also export to console via OpenTelemetry.Exporter.Console nuget library
                 );
         }
 

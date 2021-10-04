@@ -16,18 +16,19 @@ namespace DistributedTracingSample.HttpClient
         
         static void Main(string[] args)
         {
+            // Use the W3C trace context https://www.w3.org/TR/trace-context/
             Activity.DefaultIdFormat = ActivityIdFormat.W3C;
             
             // setup the trace provider
             using var openTelemetry = Sdk.CreateTracerProviderBuilder()
                 .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(ServiceName))
                 .AddSource(ActivitySourceName) // Opting in to any spans coming from this source
-                .AddHttpClientInstrumentation() // Opting in for http client instrumentation
+                .AddHttpClientInstrumentation() // Opting in for sql client instrumentation from OpenTelemetry.Instrumentation.Http nuget library
                 .AddZipkinExporter(o =>
                 {
-                    o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin
+                    o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin via OpenTelemetry.Exporter.Zipkin nuget library
                 })
-                .AddConsoleExporter() // Also export to console
+                .AddConsoleExporter() // also export to console via OpenTelemetry.Exporter.Console nuget library
                 .Build();
 
             Console.WriteLine("Press return to trigger the webapi...");
@@ -73,7 +74,9 @@ namespace DistributedTracingSample.HttpClient
             // use events to log things
             activity?.AddEvent(new ActivityEvent("This is something I'm logging"));
 
-            // make the http call
+            // make the http calls to external services.
+            // HttpClient is instrumented via OpenTelemetry.Instrumentation.Http library
+            
             var client = new System.Net.Http.HttpClient();
             var result = client.GetStringAsync(@"https://localhost:5001/api/values/sayhello?name=dasith")
                 .ConfigureAwait(false).GetAwaiter().GetResult();

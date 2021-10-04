@@ -54,7 +54,8 @@ namespace DistributedTracingSample.WebApi.Controllers
         private async Task SaveToDatabase()
         {
             // We create a SQL Client here and do a sample call to the database to show the instrumented library capabilities
-            
+            // SqlClient is instrumented via OpenTelemetry.Instrumentation.SqlClient library
+
             const string sqlConnectionString = @"Data Source=localhost;Initial Catalog=master;Integrated Security=True;"; // todo: Update this to point to your local sql instance
             const string queryString = @"SELECT CAST( GETDATE() AS Date ) ;";
 
@@ -67,10 +68,11 @@ namespace DistributedTracingSample.WebApi.Controllers
         private async Task CallBackendApi()
         {
             // This method is a placeholder for triggering some kind to backend activity hosted on another service
+
+            const string backendServiceName = "my-backend-service";
             
             // this tag specifies the remote service name https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-remote-service-attributes
-            const string remoteServiceTagName = "peer.service"; 
-            const string backendServiceName = "my-backend-service";
+            const string remoteServiceTagName = "peer.service";
 
             // create new span via .NET Activity API.
             // We don't have to specify the context as this method was called from another method in the same process.
