@@ -96,6 +96,7 @@ namespace DistributedTracingSample.Messaging.Consumer
             // call sub activities
             CallExternalService().ConfigureAwait(false).GetAwaiter().GetResult();
             SaveToDatabase().ConfigureAwait(false).GetAwaiter().GetResult();
+            CallBackendApi().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         private static async Task SaveToDatabase()
@@ -123,6 +124,31 @@ namespace DistributedTracingSample.Messaging.Consumer
 
             result = await client.GetAsync(new Uri(@"https://www.bing.com/search?q=open+telemetry+.net"));
             Console.WriteLine($"External service status code = {result.StatusCode}");
+        }
+
+        private static async Task CallBackendApi()
+        {
+            // This method is a placeholder for triggering some kind to backend activity hosted on another service
+
+            const string backendServiceName = "my-backend-service";
+
+            // this tag specifies the remote service name https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-remote-service-attributes
+            const string remoteServiceTagName = "peer.service";
+
+            // create new span via .NET Activity API.
+            // We don't have to specify the context as this method was called from another method in the same process.
+            // It will automatically be linked to existing span as a parent because .NET implicitly passes the context information.
+            using var source = new ActivitySource(ActivitySourceName);
+            using var activity = source.StartActivity("Call backend service", ActivityKind.Client);
+
+            // set the remote service name
+            activity?.AddTag(remoteServiceTagName, backendServiceName);
+
+            // add an event to this span
+            activity?.AddEvent(new ActivityEvent("This is an example event"));
+
+            // Add delay here to simulate a backend call
+            await Task.Delay(200);
         }
     }
 }
