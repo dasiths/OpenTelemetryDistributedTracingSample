@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
@@ -38,10 +39,16 @@ namespace DistributedTracingSample.WebApi
                     .AddSource(ActivitySourceName) // Opting in to any spans coming from this source
                     .AddAspNetCoreInstrumentation() // Opting in for aspnet core instrumentation from OpenTelemetry.Instrumentation.AspNetCore nuget library
                     .AddSqlClientInstrumentation() // Opting in for http client instrumentation from OpenTelemetry.Instrumentation.SqlClient nuget library
-                    .AddZipkinExporter(o =>
+                    //.AddZipkinExporter(o =>
+                    //{
+                    //    o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin via OpenTelemetry.Exporter.Zipkin nuget library
+                    //})
+                    .AddConsoleExporter() // Also export to console via OpenTelemetry.Exporter.Console nuget library
+                    .AddOtlpExporter(opt =>
                     {
-                        o.Endpoint = new Uri(ZipkinUri); // Asking OpenTelemetry collector to export traces to Zipkin via OpenTelemetry.Exporter.Zipkin nuget library
-                    }).AddConsoleExporter() // Also export to console via OpenTelemetry.Exporter.Console nuget library
+                        opt.Endpoint = new Uri("http://127.0.0.1:4317");
+                        opt.Protocol = OtlpExportProtocol.Grpc;
+                    }) // Also export to OTLP collector via OpenTelemetry.Exporter.OpenTelemetryProtocol nuget library
                 );
         }
 
@@ -57,7 +64,7 @@ namespace DistributedTracingSample.WebApi
                 app.UseExceptionHandler("/Error");
             }
 
-            app.UseHttpsRedirection();
+            // app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
