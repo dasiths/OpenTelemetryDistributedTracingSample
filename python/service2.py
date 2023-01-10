@@ -145,7 +145,8 @@ def publish_message(payload):
 @tracer.start_as_current_span("Service2_Http_Call", kind=SpanKind.CLIENT)
 def make_http_call(msg):
     try:
-        x = requests.get(f'http://dasith-pc2:5000/api/values/sayhello?name={msg}')
+        # make a call to the .NET web api
+        x = requests.get(f'http://localhost:5000/api/values/sayhello?name={msg}')
         print(x.text)
     except Exception as ex:
         current_span = trace.get_current_span()
