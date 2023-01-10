@@ -23,7 +23,7 @@ from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader, Cons
 
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 
-oltp_endpoint = "http://127.0.0.1:4317"
+otlp_endpoint = "http://127.0.0.1:4317"
 
 
 def add_console_exporter(provider: TracerProvider):
@@ -48,7 +48,7 @@ def add_zipkin_exporter(provider: TracerProvider):
 
 
 def add_otlp_exporter(provider: TracerProvider):
-    otlp_exporter = OTLPSpanExporter(endpoint=oltp_endpoint, insecure=True)
+    otlp_exporter = OTLPSpanExporter(endpoint=otlp_endpoint, insecure=True)
     otlp_span_processor = BatchSpanProcessor(span_exporter=otlp_exporter, schedule_delay_millis=1000)
     provider.add_span_processor(otlp_span_processor)
 
@@ -75,7 +75,7 @@ RequestsInstrumentor().instrument()
 tracer = trace.get_tracer("Service1")
 
 console_metric_reader = PeriodicExportingMetricReader(exporter=ConsoleMetricExporter(), export_interval_millis=1000)
-otlp_metric_reader = PeriodicExportingMetricReader(exporter=OTLPMetricExporter(endpoint=oltp_endpoint, insecure=True),
+otlp_metric_reader = PeriodicExportingMetricReader(exporter=OTLPMetricExporter(endpoint=otlp_endpoint, insecure=True),
                                                    export_interval_millis=1000)
 meter_provider = MeterProvider(resource=resource,
                                metric_readers=[console_metric_reader, otlp_metric_reader])
